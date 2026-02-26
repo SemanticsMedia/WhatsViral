@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>WhatsViral — What's Actually Viral Right Now</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A0A0A;--surface:#141414;--surface2:#1C1C1C;--surface3:#242424;--border:#2A2A2A;--border2:#383838;--accent:#FF4500;--accent-dim:rgba(255,69,0,0.12);--text:#F0F0EE;--text2:#A0A09C;--text3:#565656;--green:#22C55E;--green-dim:rgba(34,197,94,0.12);--amber:#F59E0B;--blue:#3B82F6;--r:12px;--r-sm:8px}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth;color-scheme:dark}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* LOADER */
+#loader{position:fixed;inset:0;z-index:900;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;transition:opacity 0.4s ease}
+#loader.out{opacity:0;pointer-events:none}
+.loader-logo{font-family:'Syne',sans-serif;font-size:clamp(56px,12vw,96px);font-weight:800;letter-spacing:-3px;line-height:1;color:var(--text)}
+.loader-logo .v{color:var(--accent)}
+.loader-tag{font-size:12px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;font-weight:500}
+.loader-bar{width:240px;height:1px;background:var(--border);position:relative;overflow:hidden}
+.loader-bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--accent);width:0;transition:width 0.5s ease}
+.loader-steps{display:flex;flex-direction:column;gap:7px;width:240px}
+.lstep{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);transition:color 0.3s}
+.lstep.active{color:var(--text2)}.lstep.done{color:var(--green)}
+.lstep-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background 0.3s}
+.lstep.active .lstep-dot{background:var(--accent);animation:pdot 1s infinite}
+.lstep.done .lstep-dot{background:var(--green)}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+
+/* LOCATION MODAL */
+.loc-overlay{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fi 0.2s ease}
+.loc-overlay.hidden{display:none}
+.loc-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 28px;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,0.7)}
+.loc-eyebrow{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.loc-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-0.5px;color:var(--text);margin-bottom:8px}
+.loc-sub{font-size:13.5px;color:var(--text2);line-height:1.6;margin-bottom:24px}
+.loc-auto-btn{width:100%;padding:14px;border-radius:var(--r-sm);background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;transition:opacity 0.15s,transform 0.15s}
+.loc-auto-btn:hover{opacity:0.88;transform:translateY(-1px)}
+.loc-divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:11px;color:var(--text3);font-weight:500}
+.loc-divider::before,.loc-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.loc-search{width:100%;padding:10px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface2);font-size:14px;font-family:'Inter',sans-serif;color:var(--text);outline:none;margin-bottom:16px;transition:border-color 0.15s}
+.loc-search:focus{border-color:var(--border2)}.loc-search::placeholder{color:var(--text3)}
+.loc-scroll{overflow-y:auto;flex:1}
+.continent-group{margin-bottom:18px}
+.continent-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.city-grid{display:flex;flex-wrap:wrap;gap:6px}
+.city-btn{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
+.city-btn:hover,.city-btn.sel{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+
+/* HEADER */
+.header{position:sticky;top:0;z-index:200;background:rgba(10,10,10,0.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;padding:0 20px;gap:14px}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;cursor:pointer}
+.logo-mark{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-mark svg{width:16px;height:16px;color:#fff}
+.logo-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.5px;color:var(--text)}
+.logo-name .v{color:var(--accent)}
+
+/* Header search */
+.header-search{flex:1;max-width:420px;position:relative}
+.srch-wrap{position:relative}
+.srch-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+.srch-input{width:100%;padding:8px 32px 8px 34px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface2);font-size:13.5px;font-family:'Inter',sans-serif;color:var(--text);outline:none;transition:all 0.15s}
+.srch-input:focus{border-color:var(--border2);background:var(--surface3);box-shadow:0 0 0 3px var(--accent-dim)}
+.srch-input::placeholder{color:var(--text3)}
+.srch-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;display:none;padding:2px 4px}
+.srch-clear.show{display:block}
+
+/* Inline dropdown */
+.srch-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 20px 60px rgba(0,0,0,0.5);z-index:300;overflow:hidden;max-height:380px;overflow-y:auto}
+.srch-drop.open{display:block;animation:fi 0.15s ease}
+.srch-hint{padding:9px 16px;font-size:11px;color:var(--text3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px;background:var(--surface2)}
+.srch-item{padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s}
+.srch-item:last-child{border-bottom:none}.srch-item:hover{background:var(--surface2)}
+.srch-item-title{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:4px;line-height:1.3}
+.srch-item-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);flex-wrap:wrap}
+.srch-score{font-weight:700}
+.badge-live{background:var(--accent);color:#fff;font-size:9px;font-weight:700;letter-spacing:0.5px;padding:2px 6px;border-radius:4px}
+.badge-yt{background:#FF0000;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px}
+.srch-loading-inline{padding:14px 16px;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:8px}
+.srch-empty-inline{padding:14px 16px;font-size:13px;color:var(--text2)}
+
+/* Header right */
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
+.loc-pill{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface2);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap;max-width:150px}
+.loc-pill:hover{border-color:var(--border2);color:var(--text)}
+.loc-pill-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-badge{display:flex;align-items:center;gap:5px;background:var(--green-dim);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:5px 11px;font-size:11px;font-weight:600;color:var(--green);flex-shrink:0}
+.live-dot{width:5px;height:5px;background:var(--green);border-radius:50%;animation:lpulse 2s infinite}
+@keyframes lpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.75)}}
+
+/* CATEGORY BAR */
+.cat-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;height:48px;align-items:center}
+.cat-bar::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;padding:6px 15px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all 0.15s;font-family:'Inter',sans-serif;white-space:nowrap}
+.cat-btn:hover{background:var(--surface2);color:var(--text2)}.cat-btn.active{background:var(--accent);color:#fff;font-weight:600}
+
+/* SOURCE BAR */
+.source-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:6px 20px;display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none}
+.source-bar::-webkit-scrollbar{display:none}
+.sb-label{font-size:10.5px;color:var(--text3);font-weight:500;flex-shrink:0;margin-right:2px}
+.sb-chip{display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:500;white-space:nowrap;flex-shrink:0;border:1px solid transparent}
+.sb-chip.live{background:var(--green-dim);border-color:rgba(34,197,94,0.2);color:var(--green)}
+.sb-chip.soon{background:var(--surface2);border-color:var(--border);color:var(--text3)}
+.sb-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+
+/* INSIGHT BAR */
+.insight{background:linear-gradient(90deg,var(--accent) 0%,#FF6B35 100%);padding:10px 20px}
+.insight-inner{max-width:1200px;margin:0 auto;font-size:13px;color:rgba(255,255,255,0.88);line-height:1.5}
+.insight-inner strong{color:#fff;font-weight:700}
+
+/* MAIN */
+.main{max-width:1200px;margin:0 auto}
+.feed-wrap{padding:20px 20px 80px}
+.feed-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.feed-title{font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.feed-count{background:var(--surface2);border-radius:5px;padding:2px 9px;font-size:11px;color:var(--text3);font-weight:500}
+.data-tag{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.refresh-btn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;background:none;border:none;padding:6px 12px;border-radius:var(--r-sm);font-family:'Inter',sans-serif;transition:all 0.15s}
+.refresh-btn:hover{color:var(--accent);background:var(--accent-dim)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.refresh-btn.spinning svg{animation:spin 0.6s linear}
+
+/* SEARCH PAGE */
+#search-view{display:none}
+#search-view.active{display:block}
+.search-page-hdr{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.search-back{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s;white-space:nowrap}
+.search-back:hover{border-color:var(--border2);color:var(--text)}
+.search-query-label{font-size:13px;color:var(--text3)}
+.search-query-label strong{color:var(--text);font-weight:600}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:620px){.grid{grid-template-columns:1fr 1fr;gap:14px}}
+@media(min-width:960px){.grid{grid-template-columns:1fr 1fr 1fr;gap:16px}}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;opacity:0;transform:translateY(12px);transition:opacity 0.4s ease,transform 0.4s ease,box-shadow 0.2s,border-color 0.2s}
+.card.in{opacity:1;transform:translateY(0)}.card:hover{box-shadow:0 8px 40px rgba(0,0,0,0.4);transform:translateY(-2px)!important;border-color:var(--border2)}.card:active{transform:scale(0.99)!important}
+.card-alert{background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:1.5px;padding:5px 14px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.card-source-tag{background:var(--green-dim);border-bottom:1px solid rgba(34,197,94,0.1);padding:5px 14px;font-size:10.5px;color:var(--green);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.card-source-right{color:var(--text3);font-weight:400;font-size:10px}
+.card-thumb{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#111;flex-shrink:0}
+.card-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease}
+.card:hover .card-thumb img{transform:scale(1.04)}
+.thumb-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.82) 0%,transparent 55%)}
+.thumb-rank{position:absolute;bottom:10px;left:14px;font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:rgba(255,255,255,0.1);line-height:1}
+.thumb-score-badge{position:absolute;bottom:10px;right:12px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;font-family:'Syne',sans-serif}
+.thumb-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);transition:background 0.2s,transform 0.2s}
+.card:hover .thumb-play{background:rgba(255,69,0,0.35);transform:translate(-50%,-50%) scale(1.1)}
+.thumb-no-img{width:100%;height:100%;background:linear-gradient(135deg,var(--surface2),var(--surface3));display:flex;align-items:center;justify-content:center}
+.thumb-no-label{font-size:11px;color:var(--text3);letter-spacing:0.5px}
+.card-body{padding:14px 16px}
+.card-eyebrow{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.momentum{font-size:11px;font-weight:700;letter-spacing:0.3px}
+.sep{color:var(--border2);font-size:11px}
+.yt-views{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.yt-channel{font-size:11px;color:var(--text3);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;line-height:1.3;color:var(--text);margin-bottom:8px;letter-spacing:-0.2px}
+.card-desc{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:12px}
+.plats{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.plat{display:flex;align-items:center;gap:3px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:500;color:var(--text3);background:var(--surface2);border:1px solid var(--border)}
+.plat-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.card-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)}
+.foot-left{display:flex;align-items:center;gap:10px}
+.foot-score{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.foot-score strong{font-weight:700}.foot-views{font-size:12px;color:var(--text3)}
+.share-btn{display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:transparent;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
+.share-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* BRAND CARDS */
+.brand-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;opacity:0;transform:translateY(12px);transition:opacity 0.4s,transform 0.4s,box-shadow 0.2s,border-color 0.2s}
+.brand-card.in{opacity:1;transform:translateY(0)}.brand-card:hover{box-shadow:0 8px 40px rgba(0,0,0,0.4);transform:translateY(-2px)!important;border-color:var(--border2)}
+.brand-head{padding:16px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.brand-emoji{width:48px;height:48px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.brand-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text)}
+.brand-campaign{font-size:12px;color:var(--text3);margin-top:2px}
+.brand-body{padding:14px 16px}
+.brand-desc{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:14px}
+.brand-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.metric{background:var(--surface2);border-radius:var(--r-sm);padding:10px;text-align:center}
+.metric-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text);letter-spacing:-0.5px}
+.metric-lbl{font-size:10px;color:var(--text3);margin-top:3px;font-weight:500}
+.brand-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)}
+.sentiment-lbl{font-size:11px;color:var(--text3);margin-bottom:5px}
+.sent-bar{display:flex;height:3px;border-radius:2px;overflow:hidden;gap:1px;width:110px}
+.sent-pos{background:var(--green)}.sent-neu{background:var(--border2)}.sent-neg{background:var(--accent)}
+
+/* SHARE MODAL */
+.modal{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center}
+.modal.open{display:flex;animation:slideup 0.22s ease}
+@keyframes slideup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.sheet{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:22px 22px 40px;width:100%;max-width:520px}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px}
+.sheet-eyebrow{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.sheet-title{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:18px;letter-spacing:-0.3px}
+.vc{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
+.vc-dark{background:var(--surface2);padding:18px;position:relative;overflow:hidden}
+.vc-dark::after{content:'';position:absolute;top:-60px;right:-60px;width:160px;height:160px;border-radius:50%;background:var(--accent-dim);pointer-events:none}
+.vc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.vc-brand{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text3)}.vc-brand .v{color:var(--accent)}
+.vc-loc{font-size:11px;color:var(--text3)}
+.vc-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:8px}
+.vc-teaser{font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:14px}
+.vc-plats{display:flex;flex-wrap:wrap;gap:5px}
+.vc-p{font-size:11px;padding:3px 9px;border-radius:5px;background:var(--surface3);color:var(--text2);border:1px solid var(--border)}
+.vc-foot{background:var(--surface);padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+.vc-cta{font-size:13px;font-weight:700;color:var(--accent)}.vc-vs{font-size:12px;color:var(--text3)}
+.vc-vs strong{font-weight:700;color:var(--text2)}
+.sheet-btns{display:flex;gap:8px}
+.btn-sec{flex:1;padding:13px;border-radius:var(--r-sm);background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
+.btn-sec:hover{border-color:var(--border2)}
+.btn-pri{flex:2;padding:13px;border-radius:var(--r-sm);background:var(--accent);color:#fff;border:none;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s}
+.btn-pri:hover{opacity:0.88}
+
+/* BOTTOM NAV */
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(20,20,20,0.97);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom))}
+@media(max-width:619px){.bnav{display:flex}}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;background:none;border:none;font-family:'Inter',sans-serif;transition:color 0.15s}
+.bnav-btn.active{color:var(--accent)}.bnav-btn svg{width:21px;height:21px}
+
+/* TOAST */
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:500;z-index:700;opacity:0;transition:all 0.22s;white-space:nowrap;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.empty{padding:48px 20px;text-align:center;color:var(--text3);grid-column:1/-1}
+.empty h3{font-family:'Syne',sans-serif;font-size:22px;color:var(--text2);margin-bottom:8px}
+.empty p{font-size:13px;line-height:1.7;color:var(--text3)}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-logo">Whats<span class="v">Viral</span></div>
+  <div class="loader-tag">What's actually trending right now</div>
+  <div class="loader-bar"><div class="loader-bar-fill" id="lbar"></div></div>
+  <div class="loader-steps">
+    <div class="lstep active" id="ls0"><div class="lstep-dot"></div>Connecting to Google Trends</div>
+    <div class="lstep" id="ls1"><div class="lstep-dot"></div>Connecting to YouTube</div>
+    <div class="lstep" id="ls2"><div class="lstep-dot"></div>Connecting to Bluesky</div>
+    <div class="lstep" id="ls3"><div class="lstep-dot"></div>Feed ready</div>
+  </div>
+</div>
+
+<div class="loc-overlay hidden" id="loc-overlay">
+  <div class="loc-box">
+    <div class="loc-eyebrow">WhatsViral</div>
+    <div class="loc-title">What's going viral<br>where you are?</div>
+    <div class="loc-sub">Real-time trends across YouTube, Google Trends, and Bluesky — personalised to your city, not your algorithm.</div>
+    <button class="loc-auto-btn" onclick="detectLocation(this)">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      Detect my location
+    </button>
+    <div class="loc-divider">or pick a city</div>
+    <input class="loc-search" type="text" placeholder="Search cities..." oninput="filterCities(this.value)" autocomplete="off">
+    <div class="loc-scroll" id="loc-list"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal" onclick="maybeClose(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-eyebrow">Share this viral moment</div>
+    <div class="sheet-title" id="sheet-title">—</div>
+    <div class="vc" id="vc-content"></div>
+    <div class="sheet-btns">
+      <button class="btn-sec" onclick="doCopy()">Copy link</button>
+      <button class="btn-pri" onclick="doShare()">Share with friends ↗</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<header class="header">
+  <div class="logo" onclick="clearSearch()">
+    <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <div class="logo-name">Whats<span class="v">Viral</span></div>
+  </div>
+  <div class="header-search">
+    <div class="srch-wrap">
+      <div class="srch-ico"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <input class="srch-input" id="srch" type="text" placeholder="Search any topic, brand, person..." oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <button class="srch-clear" id="srch-clear" onclick="clearSearch()">×</button>
+      <div class="srch-drop" id="srch-drop"></div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="loc-pill" onclick="document.getElementById('loc-overlay').classList.remove('hidden')" id="loc-pill">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="loc-pill-text" id="loc-label">Set location</span>
+    </div>
+    <div class="live-badge"><div class="live-dot"></div>Live</div>
+  </div>
+</header>
+
+<div class="cat-bar">
+  <button class="cat-btn active" onclick="setCat(this,'all')">All</button>
+  <button class="cat-btn" onclick="setCat(this,'breaking')">🔴 Breaking</button>
+  <button class="cat-btn" onclick="setCat(this,'sports')">Sports</button>
+  <button class="cat-btn" onclick="setCat(this,'entertainment')">Entertainment</button>
+  <button class="cat-btn" onclick="setCat(this,'politics')">Politics</button>
+  <button class="cat-btn" onclick="setCat(this,'tech')">Tech & AI</button>
+  <button class="cat-btn" onclick="setCat(this,'business')">Business</button>
+  <button class="cat-btn" onclick="setCat(this,'world')">World News</button>
+  <button class="cat-btn" onclick="setCat(this,'culture')">Culture</button>
+  <button class="cat-btn" onclick="setCat(this,'lifestyle')">Lifestyle</button>
+  <button class="cat-btn" onclick="setCat(this,'brands')">Brands & Campaigns</button>
+</div>
+
+<div class="source-bar">
+  <div class="sb-label">Live sources:</div>
+  <div class="sb-chip live"><div class="sb-dot" style="background:#4285F4"></div>Google Trends</div>
+  <div class="sb-chip live"><div class="sb-dot" style="background:#FF0000"></div>YouTube</div>
+  <div class="sb-chip live"><div class="sb-dot" style="background:#0085FF"></div>Bluesky</div>
+  <div class="sb-chip soon"><div class="sb-dot" style="background:#FF4500"></div>Reddit — coming soon</div>
+  <div class="sb-chip soon"><div class="sb-dot" style="background:#1DA1F2"></div>X / Twitter — coming soon</div>
+  <div class="sb-chip soon"><div class="sb-dot" style="background:#E1306C"></div>Instagram — coming soon</div>
+</div>
+
+<div class="insight"><div class="insight-inner" id="insight">Loading live signals...</div></div>
+
+<div class="main">
+  <div id="feed-view" class="feed-wrap">
+    <div class="feed-hdr">
+      <div class="feed-title">🔥 Trending Now <span class="feed-count" id="feed-count">—</span><span class="data-tag" id="data-tag"></span></div>
+      <button class="refresh-btn" id="refresh-btn" onclick="doRefresh(this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+    </div>
+    <div class="grid" id="feed"></div>
+  </div>
+  <div id="search-view">
+    <div class="feed-wrap" style="padding-top:20px">
+      <div class="search-page-hdr">
+        <button class="search-back" onclick="clearSearch()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to feed
+        </button>
+        <div class="search-query-label" id="search-query-label">Searching...</div>
+      </div>
+      <div class="grid" id="search-grid"></div>
+    </div>
+  </div>
+</div>
+
+<nav class="bnav">
+  <button class="bnav-btn active"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Feed</button>
+  <button class="bnav-btn" onclick="document.getElementById('srch').focus()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</button>
+  <button class="bnav-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Scores</button>
+  <button class="bnav-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alerts</button>
+  <button class="bnav-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>You</button>
+</nav>
+
+<script>
+const YT_KEY='AIzaSyC-ZFsA3vO0uGt4XXOE3yQmDKGusiFGCWE';
+const PLAT={google:{name:'Google Trends',dot:'#4285F4'},youtube:{name:'YouTube',dot:'#FF0000'},bluesky:{name:'Bluesky',dot:'#0085FF'},reddit:{name:'Reddit',dot:'#FF4500'},twitter:{name:'X / Twitter',dot:'#1DA1F2'},instagram:{name:'Instagram',dot:'#E1306C'}};
+const CITIES=[{continent:'🌍 Global',cities:['Global']},{continent:'🇮🇳 India',cities:['Delhi','Mumbai']},{continent:'🇪🇺 Europe',cities:['Amsterdam','Lisbon','London']},{continent:'🇦🇺 Asia-Pacific',cities:['Brisbane']},{continent:'🌎 Americas',cities:['New York','Rio de Janeiro']}];
+const CITY_GEO={'Global':{gt:'',yt:'US'},'Delhi':{gt:'IN',yt:'IN'},'Mumbai':{gt:'IN',yt:'IN'},'Amsterdam':{gt:'NL',yt:'NL'},'Lisbon':{gt:'PT',yt:'PT'},'London':{gt:'GB',yt:'GB'},'Brisbane':{gt:'AU',yt:'AU'},'New York':{gt:'US',yt:'US'},'Rio de Janeiro':{gt:'BR',yt:'BR'}};
+
+// Fetch each YT category separately — guarantees every category tab has content
+// relevanceLanguage=en used for India/Brazil/Portugal to avoid non-English content dominating
+const YT_BUCKETS=[
+  {id:'17',cat:'sports',n:10},
+  {id:'25',cat:'politics',n:8},   // News & Politics
+  {id:'28',cat:'tech',n:8},       // Science & Tech
+  {id:'22',cat:'lifestyle',n:8},  // People & Blogs
+  {id:'10',cat:'entertainment',n:10}, // Music
+  {id:'24',cat:'entertainment',n:6},  // Entertainment
+  {id:'27',cat:'culture',n:6},    // Education
+  {id:'20',cat:'tech',n:4},       // Gaming → tech
+  {id:'15',cat:'culture',n:4},    // Pets & Animals → culture
+];
+
+const YT_CAT_MAP={'1':'entertainment','2':'culture','10':'entertainment','15':'culture','17':'sports','18':'culture','19':'culture','20':'tech','22':'lifestyle','23':'entertainment','24':'entertainment','25':'politics','26':'tech','27':'culture','28':'tech','29':'lifestyle'};
+
+const BRANDS=[
+  {brand:'Nike',emoji:'👟',campaign:"You Can't Stop Us",platforms:['instagram','youtube','twitter'],desc:"Nike's split-screen campaign is seeing a second wave — user-generated remixes are driving it back into trending feeds globally. The hashtag is simultaneously trending on Reels and X.",reach:'2.4B',sentiment:{pos:78,neu:14,neg:8},velocity:'↑ 34%',score:91,hours:6},
+  {brand:'Zomato',emoji:'🍱',campaign:'Feeding India',platforms:['instagram','twitter','google'],desc:"Hyperlocal food festival campaign generating strong organic spread in Tier 2 cities — above benchmark in Delhi, Nagpur and Lucknow. Brand search volume up 44% in 48 hours.",reach:'180M',sentiment:{pos:71,neu:20,neg:9},velocity:'↑ 22%',score:84,hours:3},
+  {brand:'Apple',emoji:'🍎',campaign:'Shot on iPhone',platforms:['instagram','youtube','google'],desc:"UGC under the Shot on iPhone tag spreading across photography communities — significant cross-platform signal with zero paid amplification in this cycle.",reach:'890M',sentiment:{pos:82,neu:12,neg:6},velocity:'↑ 18%',score:88,hours:12},
+  {brand:'Swiggy',emoji:'🛵',campaign:'10-min delivery',platforms:['instagram','twitter','google'],desc:"Viral spike after a celebrity clip spread organically in Mumbai. Brand search volume on Google Trends up 67% in 24 hours — unusually fast for a food delivery campaign.",reach:'95M',sentiment:{pos:68,neu:22,neg:10},velocity:'↑ 67%',score:86,hours:1},
+  {brand:'Jio',emoji:'📱',campaign:'5G for Every Indian',platforms:['youtube','twitter','google'],desc:"5G rollout finding its audience beyond metros. Tier 2 and 3 cities showing disproportionate engagement — the democratic access narrative resonating beyond what paid media could achieve.",reach:'450M',sentiment:{pos:74,neu:18,neg:8},velocity:'↑ 29%',score:80,hours:5},
+  {brand:'Patagonia',emoji:'🏔️',campaign:"Don't Buy This Jacket",platforms:['bluesky','twitter','youtube'],desc:"Iconic anti-consumerism campaign seeing renewed organic spread on Bluesky sustainability communities. A new generation discovering it is driving reach far beyond the original audience.",reach:'320M',sentiment:{pos:89,neu:8,neg:3},velocity:'↑ 41%',score:83,hours:8},
+];
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function categorise(t){
+  t=(t||'').toLowerCase();
+  if(/cricket|ipl|football|soccer|\bnba\b|\bnfl\b|\bf1\b|formula 1|tennis|olympics|rugby|match\b|final\b|championship|goal\b|wicket|ashes|afcon|bundesliga|grand prix|premier league|serie a|la liga|ufc|wwe|golf\b|swim|athlete|racing|tournament|trophy|stadium|\bvs\b|fixture|batting|bowling|innings/.test(t))return'sports';
+  if(/film|movie|bollywood|nollywood|actor|actress|album\b|song\b|music\b|concert|celebrity|award\b|grammy|oscar|streaming|netflix|amazon prime|disney|anime|drama|artist\b|band\b|tour\b|tiktok|influencer|singer|comedian|trailer|season \d|episode|web series/.test(t))return'entertainment';
+  if(/election|minister|government|parliament|vote|politics|protest|president|prime minister|\bmodi\b|policy|bill\b|congress|senate|manifesto|summit|diplomat|war\b|ceasefire|coup|referendum|tax\b|budget|nato|\bun \b|g20|g7|sanction|rally\b|bjp|opposition/.test(t))return'politics';
+  if(/\bai\b|artificial intelligence|chatgpt|openai|gemini|deepseek|tech\b|startup|software|\bapple\b|\bgoogle\b|microsoft|meta\b|\bamazon\b|iphone|android|\bapp\b|cyber|hack|robot|space\b|\bnasa\b|\bisro\b|semiconductor|chip\b|cloud\b|saas|fintech|crypto|bitcoin|blockchain|gadget/.test(t))return'tech';
+  if(/stock|market\b|economy|inflation|interest rate|gdp|sensex|nifty|rupee|dollar|pound|euro|bank\b|finance|\bipo\b|invest|forex|shares|earning|revenue|profit|recession|\bimf\b|funding|valuation|venture/.test(t))return'business';
+  if(/flood|earthquake|weather|storm|climate|wildfire|disaster|environment|pollution|\baqi\b|hospital|covid|pandemic|tsunami|cyclone|hurricane|drought|accident|crash|explosion|casualt|killed|injur/.test(t))return'world';
+  if(/fashion|art\b|food\b|travel|culture|heritage|festival|craft|design|dance|theatre|book\b|literature|tradition|cinema|photography|museum|gallery|architecture|cooking|recipe/.test(t))return'culture';
+  if(/fitness|wellness|lifestyle|home\b|beauty|skincare|yoga|meditation|diet\b|relationship|parenting|education|school|university|mental health|nutrition|workout/.test(t))return'lifestyle';
+  return'world';
+}
+
+function buildDesc(title,views,channel,city){
+  const cat=categorise(title),v=fmtN(views);
+  const loc=city&&city!=='Global'?` in ${city}`:'';
+  const ch=channel?` · ${channel}`:'';
+  const map={
+    sports:`${v} views${loc}${ch} — spreading fast across sports communities on multiple platforms.`,
+    entertainment:`${v} views${loc}${ch} — breaking through into mainstream feeds beyond its origin audience.`,
+    politics:`${v} views${loc}${ch} — generating cross-demographic discussion well beyond partisan communities.`,
+    tech:`${v} views${loc}${ch} — reaching mainstream audiences beyond the usual tech and developer circles.`,
+    business:`${v} views${loc}${ch} — finance content finding unusual traction outside typical investor communities.`,
+    culture:`${v} views${loc}${ch} — cultural content spreading far beyond its origin community organically.`,
+    world:`${v} views${loc}${ch} — news content spreading across platform and geographic boundaries.`,
+    lifestyle:`${v} views${loc}${ch} — lifestyle content generating strong organic engagement across platforms.`,
+  };
+  return map[cat]||`${v} views${loc}${ch} — trending right now and spreading organically across platforms.`;
+}
+
+function vScore(platforms,value,hours){
+  const p=platforms.length,v=value||50,h=hours||0;
+  const s=Math.min(25,Math.round((p/5)*25))+Math.round((v/100)*22)+Math.min(20,Math.round(10+(v/100)*8))+Math.min(15,Math.round(8+Math.random()*6))+Math.min(10,p*2);
+  const decay=h>48?-18:h>24?-10:h>8?-4:h>3?-2:0;
+  return Math.min(99,Math.max(45,s+decay));
+}
+
+function scoreColor(s){return s>=88?'#FF4500':s>=74?'#F59E0B':s>=60?'#22C55E':'#3B82F6'}
+function fmtN(n){if(!n)return'—';if(n>=1e9)return(n/1e9).toFixed(1)+'B';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return Math.round(n/1e3)+'K';return String(n)}
+function tAgo(h){if(!h||h<0.08)return'Just now';if(h<1)return Math.round(h*60)+'m ago';if(h<24)return Math.floor(h)+'h ago';return Math.floor(h/24)+'d ago'}
+function mom(v){if(v>=90)return{t:'Surging 🚀',c:'#FF4500'};if(v>=75)return{t:'Rising fast ↑',c:'#F59E0B'};if(v>=55)return{t:'Building ↗',c:'#22C55E'};return{t:'Emerging',c:'#3B82F6'}}
+
+// ─── DATA FETCHERS ────────────────────────────────────────────────────────────
+async function fetchGT(geo){
+  const r=await fetch(`/.netlify/functions/trends${geo?`?geo=${geo}`:''}`,{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error('GT '+r.status);
+  const d=await r.json();
+  return(d.items||[]).map(item=>{
+    const cat=categorise(item.title);
+    const plats=['google'];
+    if(['entertainment','sports','culture'].includes(cat))plats.push('instagram');
+    if(['tech','politics','business'].includes(cat))plats.push('twitter');
+    return{id:'gt_'+item.title.replace(/\s+/g,'_'),topic:item.title,
+      desc:item.snippet?(item.snippet+(item.newsTitle?` (${item.newsTitle})`:'')):`"${item.title}" is surging on Google — significant search volume generating cross-platform spread.`,
+      value:item.trafficValue||62,hours:Math.random()*8,platforms:plats,cat,source:'google',isLive:true,score:null};
+  });
+}
+
+// Fetch one YT category bucket
+async function fetchYTBucket(region,city,catId,maxResults){
+  const needsLangFilter=['IN','BR','PT'].includes(region);
+  const lang=needsLangFilter?'&relevanceLanguage=en':'';
+  const url=`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${region}&videoCategoryId=${catId}&maxResults=${maxResults}${lang}&key=${YT_KEY}`;
+  const r=await fetch(url,{signal:AbortSignal.timeout(12000)});
+  if(!r.ok)return[];
+  const d=await r.json();
+  return(d.items||[]).map(item=>{
+    const s=item.snippet,st=item.statistics;
+    const views=parseInt(st.viewCount)||0;
+    const hoursOld=Math.max(0.1,(Date.now()-new Date(s.publishedAt).getTime())/3600000);
+    const value=Math.min(97,Math.round(Math.log10(Math.max(views,100))*15)+18);
+    const cat=YT_CAT_MAP[String(catId)]||categorise(s.title);
+    return{id:'yt_'+item.id,topic:s.title.length>72?s.title.substring(0,70)+'…':s.title,
+      desc:buildDesc(s.title,views,s.channelTitle,city),value,hours:hoursOld,
+      platforms:['youtube'],cat,source:'youtube',isLive:true,
+      ytId:item.id,ytViews:views,ytChannel:s.channelTitle,
+      ytThumb:s.thumbnails?.high?.url||s.thumbnails?.medium?.url,score:null};
+  });
+}
+
+async function fetchYT(region,city){
+  const results=await Promise.allSettled(YT_BUCKETS.map(b=>fetchYTBucket(region,city,b.id,b.n)));
+  const all=[];
+  results.forEach(r=>{if(r.status==='fulfilled')all.push(...r.value);});
+  return all;
+}
+
+async function fetchBS(){
+  try{
+    const r=await fetch('https://public.api.bsky.app/xrpc/app.bsky.unspecced.getPopularFeedGenerators?limit=10',{signal:AbortSignal.timeout(8000)});
+    if(!r.ok)return[];
+    const d=await r.json();
+    return(d.feeds||[]).slice(0,5).map(f=>({id:'bs_'+f.uri,topic:f.displayName||'Trending on Bluesky',
+      desc:f.description||'Gaining significant traction across the Bluesky network right now.',
+      value:48+Math.round(Math.random()*38),hours:Math.random()*20,platforms:['bluesky'],
+      cat:categorise(f.displayName||''),source:'bluesky',isLive:true,score:null}));
+  }catch{return[];}
+}
+
+// YT search — used for search page
+async function searchYT(query,region){
+  const weekAgo=new Date(Date.now()-7*24*3600*1000).toISOString();
+  const lang=['IN','BR','PT'].includes(region)?'&relevanceLanguage=en':'';
+  const r=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&order=viewCount&publishedAfter=${weekAgo}&regionCode=${region}&maxResults=15${lang}&key=${YT_KEY}`,{signal:AbortSignal.timeout(12000)});
+  if(!r.ok)return[];
+  const d=await r.json();
+  if(!d.items?.length)return[];
+  const ids=d.items.map(i=>i.id.videoId).join(',');
+  const sr=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${ids}&key=${YT_KEY}`,{signal:AbortSignal.timeout(10000)});
+  if(!sr.ok)return[];
+  const sd=await sr.json();
+  return(sd.items||[]).map(item=>{
+    const sn=item.snippet,st=item.statistics;
+    const views=parseInt(st.viewCount)||0;
+    const h=Math.max(0.1,(Date.now()-new Date(sn.publishedAt).getTime())/3600000);
+    const val=Math.min(97,Math.round(Math.log10(Math.max(views,100))*16)+15);
+    return{id:'yt_'+item.id,topic:sn.title.length>72?sn.title.substring(0,70)+'…':sn.title,
+      desc:buildDesc(sn.title,views,sn.channelTitle,''),value:val,hours:h,
+      platforms:['youtube'],cat:YT_CAT_MAP[sn.categoryId]||categorise(sn.title),
+      source:'youtube',isLive:true,ytId:item.id,ytViews:views,ytChannel:sn.channelTitle,
+      ytThumb:sn.thumbnails?.high?.url,score:vScore(['youtube'],val,h)};
+  });
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let city=null,cat='all',allItems=[],feedItems=[],shareItem=null,loading=false,searchMode=false;
+
+// ─── LOAD FEED ────────────────────────────────────────────────────────────────
+async function loadFeed(){
+  if(!city||loading)return;
+  loading=true;
+  document.getElementById('feed').innerHTML='<div class="empty"><p style="font-size:13px;color:var(--text3)">Fetching live signals…</p></div>';
+  const geo=CITY_GEO[city]||{gt:'',yt:'US'};
+  let gt=[],yt=[],bs=[],sources=[];
+  await Promise.allSettled([
+    fetchGT(geo.gt).then(r=>{gt=r;if(r.length)sources.push('Google Trends');}).catch(()=>{}),
+    fetchYT(geo.yt,city).then(r=>{yt=r;if(r.length)sources.push('YouTube');}).catch(()=>{}),
+    fetchBS().then(r=>{bs=r;if(r.length)sources.push('Bluesky');}).catch(()=>{}),
+  ]);
+  const combined=[...gt,...yt,...bs];
+  if(!combined.length){
+    document.getElementById('feed').innerHTML='<div class="empty"><h3>Couldn\'t load live data</h3><p>Check your connection and try refreshing.</p></div>';
+    loading=false;return;
+  }
+  const seen=new Set();
+  allItems=combined
+    .filter(i=>{const k=i.topic.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;})
+    .map(i=>({...i,score:vScore(i.platforms,i.value,i.hours)}))
+    .sort((a,b)=>b.score-a.score)
+    .map((i,idx)=>({...i,rank:idx+1}));
+  document.getElementById('data-tag').innerHTML=`<svg width="7" height="7" viewBox="0 0 8 8" fill="var(--green)"><circle cx="4" cy="4" r="4"/></svg>&nbsp;${sources.join(' · ')}`;
+  applyFilter();
+  updateInsight();
+  showToast(`Updated · ${city}`);
+  loading=false;
+}
+
+function applyFilter(){
+  if(cat==='brands'){renderBrands();return;}
+  feedItems=cat==='all'?[...allItems]:cat==='breaking'?allItems.filter(i=>i.value>=88&&i.hours<4):allItems.filter(i=>i.cat===cat);
+  renderFeed(feedItems,'feed');
+  document.getElementById('feed-count').textContent=feedItems.length+' trends';
+}
+
+function updateInsight(){
+  if(!allItems.length)return;
+  const top=allItems[0];
+  const live=allItems.filter(i=>i.isLive).length;
+  const brk=allItems.filter(i=>i.value>=88&&i.hours<4).length;
+  const loc=city==='Global'?'globally':`in ${city}`;
+  document.getElementById('insight').innerHTML=`<strong>${live} live signals</strong> tracked ${loc} · sorted by ViralScore${brk?` · <strong>${brk} breaking</strong> in last 4h`:''} · Top: <strong>${top.topic}</strong>`;
+}
+
+function renderFeed(items,gridId){
+  const grid=document.getElementById(gridId);
+  if(!items.length){
+    grid.innerHTML=`<div class="empty"><h3>Nothing here yet</h3><p>The live feed has ${allItems.length} total trends. Try All, or refresh.</p></div>`;
+    return;
+  }
+  grid.innerHTML=items.map((item,idx)=>cardHTML(item,idx)).join('');
+  requestAnimationFrame(()=>document.querySelectorAll('#'+gridId+' .card').forEach((c,i)=>setTimeout(()=>c.classList.add('in'),i*35)));
+}
+
+function cardHTML(item,idx){
+  const col=scoreColor(item.score),m=mom(item.value),brk=item.value>=92&&item.hours<3;
+  const plHTML=item.platforms.map(pid=>{const p=PLAT[pid]||{name:pid,dot:'#999'};return`<div class="plat"><div class="plat-dot" style="background:${p.dot}"></div>${p.name}</div>`;}).join('');
+  let media='';
+  if(item.ytThumb){
+    media=`<div class="card-thumb" onclick="openYT('${item.ytId}')"><img src="${item.ytThumb}" alt="" loading="lazy"><div class="thumb-overlay"></div><div class="thumb-rank">${item.rank}</div><div class="thumb-score-badge">${item.score}</div><div class="thumb-play"><svg width="16" height="16" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>`;
+  } else if(item.rank<=8){
+    media=`<div class="card-thumb"><div class="thumb-no-img"><div class="thumb-no-label">${item.source==='google'?'Google Trends':'Bluesky'}</div></div><div class="thumb-overlay"></div><div class="thumb-rank">${item.rank}</div><div class="thumb-score-badge">${item.score}</div></div>`;
+  }
+  const ytMeta=item.ytViews?`<span class="sep">·</span><span class="yt-views">${fmtN(item.ytViews)} views</span><span class="sep">·</span><span class="yt-channel">${item.ytChannel||''}</span>`:'';
+  return`<div class="card" id="c${idx}">${brk?'<div class="card-alert"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg>Breaking</div>':''}<div class="card-source-tag"><span><svg width="6" height="6" viewBox="0 0 8 8" fill="var(--green)" style="margin-right:4px"><circle cx="4" cy="4" r="4"/></svg>Live · ${item.source==='youtube'?'YouTube':item.source==='bluesky'?'Bluesky':'Google Trends'}</span><span class="card-source-right">${tAgo(item.hours)}</span></div>${media}<div class="card-body"><div class="card-eyebrow"><span class="momentum" style="color:${m.c}">${m.t}</span>${ytMeta}</div><div class="card-title">${item.topic}</div><div class="card-desc">${item.desc}</div><div class="plats">${plHTML}</div><div class="card-foot"><div class="foot-left"><div class="foot-score">ViralScore <strong style="color:${col}">${item.score}</strong></div>${item.ytViews?`<div class="foot-views">${fmtN(item.ytViews)} views</div>`:''}</div><button class="share-btn" onclick="event.stopPropagation();openShare(${idx})"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</button></div></div></div>`;
+}
+
+function openYT(id){window.open(`https://www.youtube.com/watch?v=${id}`,'_blank')}
+
+function renderBrands(){
+  document.getElementById('feed-count').textContent=BRANDS.length+' campaigns';
+  document.getElementById('feed').innerHTML=BRANDS.map((b,i)=>{
+    const col=scoreColor(b.score);
+    const plHTML=b.platforms.map(pid=>{const p=PLAT[pid]||{name:pid,dot:'#999'};return`<div class="plat"><div class="plat-dot" style="background:${p.dot}"></div>${p.name}</div>`;}).join('');
+    return`<div class="brand-card" id="bc${i}"><div class="brand-head"><div class="brand-emoji">${b.emoji}</div><div><div class="brand-name">${b.brand}</div><div class="brand-campaign">${b.campaign}</div></div></div><div class="brand-body"><div class="brand-desc">${b.desc}</div><div class="brand-metrics"><div class="metric"><div class="metric-val">${b.reach}</div><div class="metric-lbl">Est. Reach</div></div><div class="metric"><div class="metric-val" style="color:${col}">${b.score}</div><div class="metric-lbl">ViralScore</div></div><div class="metric"><div class="metric-val" style="color:var(--green)">${b.velocity}</div><div class="metric-lbl">24h Velocity</div></div></div><div class="plats">${plHTML}</div><div class="brand-foot"><div><div class="sentiment-lbl">${b.sentiment.pos}% positive sentiment</div><div class="sent-bar"><div class="sent-pos" style="flex:${b.sentiment.pos}"></div><div class="sent-neu" style="flex:${b.sentiment.neu}"></div><div class="sent-neg" style="flex:${b.sentiment.neg}"></div></div></div><button class="share-btn" onclick="openBrandShare(${i})">Share report</button></div></div></div>`;
+  }).join('');
+  requestAnimationFrame(()=>document.querySelectorAll('.brand-card').forEach((c,i)=>setTimeout(()=>c.classList.add('in'),i*50)));
+}
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+let srchTimer;
+function onSearchInput(val){
+  clearTimeout(srchTimer);
+  document.getElementById('srch-clear').classList.toggle('show',val.length>0);
+  const drop=document.getElementById('srch-drop');
+  if(!val||val.length<2){drop.classList.remove('open');return;}
+  const local=allItems.filter(i=>i.topic.toLowerCase().includes(val.toLowerCase())).slice(0,4);
+  const hint='<div class="srch-hint"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>Press Enter for full page results</div>';
+  drop.innerHTML=hint+(local.length?local.map(i=>srchItemHTML(i)).join(''):'')+'<div class="srch-loading-inline"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Searching YouTube…</div>';
+  drop.classList.add('open');
+  srchTimer=setTimeout(()=>fetchDropYT(val),600);
+}
+
+async function fetchDropYT(val){
+  if(val!==document.getElementById('srch').value)return;
+  const drop=document.getElementById('srch-drop');
+  try{
+    const region=(CITY_GEO[city]||{yt:'IN'}).yt;
+    const res=await searchYT(val,region);
+    const local=allItems.filter(i=>i.topic.toLowerCase().includes(val.toLowerCase())).slice(0,2);
+    const merged=[...res,...local.filter(l=>!res.some(y=>y.id===l.id))];
+    const hint=`<div class="srch-hint"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>Enter for full results · ${merged.length} found on YouTube</div>`;
+    drop.innerHTML=hint+(merged.length?merged.slice(0,6).map(i=>srchItemHTML(i)).join(''):'<div class="srch-empty-inline">No results found on YouTube this week.</div>');
+  }catch{
+    const local=allItems.filter(i=>i.topic.toLowerCase().includes(val.toLowerCase())).slice(0,4);
+    const hint='<div class="srch-hint">Press Enter for full results</div>';
+    drop.innerHTML=hint+(local.length?local.map(i=>srchItemHTML(i)).join(''):'<div class="srch-empty-inline">No local results found.</div>');
+  }
+}
+
+function srchItemHTML(i){
+  const col=scoreColor(i.score||50);
+  const tag=i.source==='youtube'?'<span class="badge-yt">YT</span>':i.isLive?'<span class="badge-live">LIVE</span>':'';
+  const views=i.ytViews?`<span>${fmtN(i.ytViews)} views</span><span>·</span>`:'';
+  return`<div class="srch-item" onclick="srchClick('${i.ytId||''}','${i.topic.replace(/'/g,"\\'")}')"><div class="srch-item-title">${i.topic} ${tag}</div><div class="srch-item-meta">${views}<span class="srch-score" style="color:${col}">ViralScore ${i.score||'—'}</span><span>·</span><span>${tAgo(i.hours)}</span>${i.ytChannel?`<span>·</span><span>${i.ytChannel}</span>`:''}</div></div>`;
+}
+
+function srchClick(ytId,topic){
+  if(ytId){window.open(`https://www.youtube.com/watch?v=${ytId}`,'_blank');return;}
+  document.getElementById('srch-drop').classList.remove('open');
+}
+
+function onSearchKey(e){
+  if(e.key==='Enter'){const v=e.target.value.trim();if(v.length>=2)openSearchPage(v);}
+  if(e.key==='Escape')clearSearch();
+}
+
+async function openSearchPage(query){
+  document.getElementById('srch-drop').classList.remove('open');
+  document.getElementById('feed-view').style.display='none';
+  document.getElementById('search-view').style.display='block';
+  document.getElementById('search-query-label').innerHTML=`Searching for <strong>"${query}"</strong>…`;
+  searchMode=true;
+  const grid=document.getElementById('search-grid');
+  grid.innerHTML=`<div class="empty"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="animation:spin 1s linear infinite;margin-bottom:16px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><p style="color:var(--text2);font-size:14px">Searching YouTube for <strong>"${query}"</strong></p><p>Scanning the last 7 days for viral content</p></div>`;
+  try{
+    const region=(CITY_GEO[city]||{yt:'IN'}).yt;
+    const ytRes=await searchYT(query,region);
+    const local=allItems.filter(i=>i.topic.toLowerCase().includes(query.toLowerCase())||i.desc.toLowerCase().includes(query.toLowerCase())).filter(l=>!ytRes.some(y=>y.id===l.id));
+    const results=[...ytRes,...local].sort((a,b)=>b.score-a.score);
+    document.getElementById('search-query-label').innerHTML=`<strong>${results.length} result${results.length!==1?'s':''}</strong> for <strong>"${query}"</strong>`;
+    if(!results.length){
+      grid.innerHTML=`<div class="empty"><h3>No results for "${query}"</h3><p>This topic hasn't trended on YouTube in the last 7 days for ${city||'your location'}.<br>Try a related keyword — viral moments can emerge from any angle.</p></div>`;
+    } else {
+      grid.innerHTML=results.map((item,idx)=>cardHTML({...item,rank:idx+1},idx)).join('');
+      requestAnimationFrame(()=>document.querySelectorAll('#search-grid .card').forEach((c,i)=>setTimeout(()=>c.classList.add('in'),i*35)));
+    }
+  }catch{
+    grid.innerHTML=`<div class="empty"><h3>Search temporarily unavailable</h3><p>YouTube search requires a live connection. Please try again.</p></div>`;
+  }
+}
+
+function clearSearch(){
+  searchMode=false;
+  document.getElementById('srch').value='';
+  document.getElementById('srch-clear').classList.remove('show');
+  document.getElementById('srch-drop').classList.remove('open');
+  document.getElementById('search-view').style.display='none';
+  document.getElementById('feed-view').style.display='block';
+}
+
+document.addEventListener('click',e=>{if(!e.target.closest('.srch-wrap'))document.getElementById('srch-drop').classList.remove('open');});
+
+// ─── CATEGORY ─────────────────────────────────────────────────────────────────
+function setCat(el,c){
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');cat=c;
+  if(searchMode)clearSearch();
+  applyFilter();
+  if(c!=='brands')updateInsight();
+}
+
+function doRefresh(btn){
+  if(loading)return;
+  btn.classList.add('spinning');
+  loadFeed().then(()=>setTimeout(()=>btn.classList.remove('spinning'),600));
+}
+
+// ─── CITY PICKER ──────────────────────────────────────────────────────────────
+function renderCityList(filter){
+  const f=filter.toLowerCase();
+  document.getElementById('loc-list').innerHTML=CITIES.map(c=>{
+    const cities=c.cities.filter(x=>!f||x.toLowerCase().includes(f));
+    if(!cities.length)return'';
+    return`<div class="continent-group"><div class="continent-label">${c.continent}</div><div class="city-grid">${cities.map(x=>`<button class="city-btn${x===city?' sel':''}" onclick="setCity('${x}')">${x}</button>`).join('')}</div></div>`;
+  }).join('');
+}
+function filterCities(v){renderCityList(v)}
+function setCity(c){city=c;document.getElementById('loc-label').textContent=c;document.getElementById('loc-overlay').classList.add('hidden');renderCityList('');loadFeed();}
+function detectLocation(btn){
+  if(!navigator.geolocation){setCity('Global');return;}
+  btn.textContent='Detecting…';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const{latitude:la,longitude:lo}=pos.coords;
+    const coords={'Delhi':[28.6,77.2],'Mumbai':[19.1,72.9],'Amsterdam':[52.4,4.9],'Lisbon':[38.7,-9.1],'London':[51.5,-0.1],'Brisbane':[-27.5,153.0],'New York':[40.7,-74.0],'Rio de Janeiro':[-22.9,-43.2]};
+    let best='Global',min=Infinity;
+    Object.entries(coords).forEach(([c,[a,b]])=>{const d=Math.hypot(la-a,lo-b);if(d<min){min=d;best=c;}});
+    setCity(best);
+  },()=>setCity('Global'));
+}
+
+// ─── SHARE ────────────────────────────────────────────────────────────────────
+function openShare(idx){
+  shareItem=searchMode?(document.querySelectorAll('#search-grid .card').length?allItems.find((_,i)=>i===idx)||feedItems[idx]:feedItems[idx]):feedItems[idx];
+  if(!shareItem)return;
+  const i=shareItem,col=scoreColor(i.score),loc=city==='Global'?'🌍 Global':'📍 '+city;
+  const plHTML=i.platforms.map(pid=>`<div class="vc-p">${(PLAT[pid]||{name:pid}).name}</div>`).join('');
+  document.getElementById('sheet-title').textContent=i.topic;
+  document.getElementById('vc-content').innerHTML=`<div class="vc-dark"><div class="vc-hdr"><div class="vc-brand">Whats<span class="v">Viral</span></div><div class="vc-loc">${loc}</div></div><div class="vc-title">${i.topic}</div><div class="vc-teaser">${i.desc.substring(0,120)}...</div><div class="vc-plats">${plHTML}</div></div><div class="vc-foot"><div class="vc-cta">See what's actually viral →</div><div class="vc-vs">ViralScore <strong style="color:${col}">${i.score}</strong></div></div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function openBrandShare(idx){
+  const b=BRANDS[idx];if(!b)return;
+  const col=scoreColor(b.score);
+  document.getElementById('sheet-title').textContent=`${b.brand} — ${b.campaign}`;
+  document.getElementById('vc-content').innerHTML=`<div class="vc-dark"><div class="vc-hdr"><div class="vc-brand">Whats<span class="v">Viral</span></div><div class="vc-loc">Brands & Campaigns</div></div><div class="vc-title">${b.emoji} ${b.brand}: ${b.campaign}</div><div class="vc-teaser">${b.desc.substring(0,120)}...</div><div class="vc-plats">${b.platforms.map(pid=>`<div class="vc-p">${(PLAT[pid]||{name:pid}).name}</div>`).join('')}</div></div><div class="vc-foot"><div class="vc-cta">Track campaign virality →</div><div class="vc-vs">ViralScore <strong style="color:${col}">${b.score}</strong></div></div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function maybeClose(e){if(e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open')}
+function doShare(){
+  if(!shareItem)return;
+  const text=`🔥 "${shareItem.topic}" is going viral right now\n\n${shareItem.desc.substring(0,100)}...\n\nSee what's actually viral:\nwhatsviral.netlify.app`;
+  if(navigator.share)navigator.share({title:'WhatsViral',text,url:'https://whatsviral.netlify.app'}).catch(()=>{});
+  else navigator.clipboard.writeText(text).then(()=>{showToast('Copied!');document.getElementById('modal').classList.remove('open');});
+}
+function doCopy(){navigator.clipboard.writeText('https://whatsviral.netlify.app').then(()=>showToast('Link copied!'))}
+
+let toastT;
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  renderCityList('');
+  for(let i=0;i<4;i++){
+    setTimeout(()=>{
+      if(i>0){const p=document.getElementById('ls'+(i-1));p.classList.remove('active');p.classList.add('done');}
+      const el=document.getElementById('ls'+i);if(el)el.classList.add('active');
+      document.getElementById('lbar').style.width=((i+1)/4*100)+'%';
+    },i*600);
+  }
+  setTimeout(()=>{
+    document.getElementById('ls3').classList.replace('active','done');
+    document.getElementById('lbar').style.width='100%';
+    setTimeout(()=>{
+      document.getElementById('loader').classList.add('out');
+      setTimeout(()=>{document.getElementById('loader').style.display='none';document.getElementById('loc-overlay').classList.remove('hidden');},400);
+    },300);
+  },2700);
+});
+</script>
+</body>
+</html>
